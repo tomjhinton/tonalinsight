@@ -1,7 +1,21 @@
 import React from 'react'
 import axios from 'axios'
 import {Link} from 'react-router-dom'
+import Tone from 'tone'
 
+
+var synth = new Tone.DuoSynth()
+var synthB = new Tone.PolySynth()
+var synthC = new Tone.DuoSynth()
+
+var freeverb = new Tone.Freeverb().toMaster()
+var pingPong = new Tone.PingPongDelay('4n', 0.2).toMaster()
+var chorus = new Tone.Chorus(4, 2.5, 5)
+var cheby = new Tone.Chebyshev(51)
+
+synth.toMaster().chain(freeverb, chorus)
+synthB.chain(pingPong,chorus,cheby).toMaster()
+synthC.toMaster().chain(freeverb, chorus)
 
 
 
@@ -54,10 +68,50 @@ class Home extends React.Component{
       [e.target.name]: e.target.value})
   }
 
-  handleSubmit(event) {
-    alert('A name was submitted: ' + this.state.value)
-    event.preventDefault()
+  handleSubmit(e) {
+    e.preventDefault()
+    this.toneSetup()
   }
+
+
+  toneSetup(){
+
+
+    const arrLabel = this.state.here.Label.toUpperCase().split('')
+    console.log(arrLabel)
+    let notes = arrLabel.filter(x => x.charCodeAt(0) >= 65 && x.charCodeAt(0) <= 71 )
+    let notesH = notes.map(x => x = x +4)
+    let notesL = notes.map(x => x = x +2)
+    let notesM = notes.map(x => x = x +3)
+
+    const arrName = this.state.name.toUpperCase().split('')
+
+    console.log(parseInt(this.state.age)/100)
+    freeverb.dampening.value = this.state.age*10
+
+    var pattern = new Tone.Pattern(function(time, note){
+      synth.triggerAttackRelease(note, 0.45)
+    }, notesH, "random")
+
+    var pattern2 = new Tone.Pattern(function(time, note){
+      synthB.triggerAttackRelease(note, 0.2)
+    }, notesL.reverse().concat(notes.map(x => x = x +1)), "random")
+
+    var pattern3 = new Tone.Pattern(function(time, note){
+      synthC.triggerAttackRelease(note, 1.85)
+    }, notesM, "random")
+
+    pattern.start(0)
+    pattern2.start(0)
+    pattern3.start(0)
+
+    Tone.Transport.start()
+    Tone.Transport.bpm.value = this.state.age
+    Tone.Transport.bpm.rampTo((this.state.age *5), 300)
+
+
+  }
+
 
 
   render() {
@@ -92,6 +146,8 @@ class Home extends React.Component{
             </div>}
           </div>
         </div>
+        <canvas id="myCanvas" width="500" height="500" style={{border: '5px solid #000000'}}>
+        </canvas>
       </div>
 
 
